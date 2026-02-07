@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SimpleReceipt — Photo to Excel in seconds</title>
+  <meta name="description" content="Turn receipt photos into a clean Excel file. Mobile-first. No accounts. One-time payment." />
+
+  <style>
+    :root { --bg:#0b0b0c; --card:#121214; --text:#f5f5f7; --muted:#a2a2aa; --line:#232327; --accent:#ffffff; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text); }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .logo { font-weight: 800; letter-spacing: .2px; }
+    .pill { border:1px solid var(--line); padding:8px 12px; border-radius:999px; color:var(--muted); font-size:13px; }
+    .hero { padding: 26px 0 12px; }
+    h1 { font-size: 34px; line-height: 1.05; margin: 10px 0; }
+    .sub { color: var(--muted); font-size: 16px; line-height: 1.4; max-width: 50ch; }
+    .ctaRow { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+    .btn { display:inline-block; padding: 12px 14px; border-radius: 12px; border:1px solid var(--line); background: #151518; }
+    .btn.primary { background: var(--accent); color:#000; border-color: transparent; font-weight:700; }
+    .btn.ghost { background: transparent; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:12px; margin: 16px 0; }
+    @media (min-width: 860px){ .grid { grid-template-columns: 1.1fr .9fr; } h1 { font-size: 44px; } }
+    .card { background: var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; }
+    .kpis { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+    @media (min-width: 560px){ .kpis { grid-template-columns: repeat(4, 1fr); } }
+    .k { background:#0f0f11; border:1px solid var(--line); border-radius:14px; padding:12px; }
+    .k b { display:block; font-size: 16px; }
+    .k span { color: var(--muted); font-size: 12px; }
+    .steps { display:grid; gap:10px; }
+    .step { display:flex; gap:10px; align-items:flex-start; }
+    .num { width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#0f0f11; border:1px solid var(--line); color:var(--muted); font-weight:700; }
+    .faq h3 { margin: 0 0 6px; font-size: 15px; }
+    .faq p { margin: 0 0 12px; color: var(--muted); }
+    .fine { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .imgPh { aspect-ratio: 9/16; border-radius: 16px; border:1px dashed #2b2b33; display:flex; align-items:center; justify-content:center; color:#777; background:#0f0f11; }
+    .badge { display:inline-block; font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+    .sep { height:1px; background: var(--line); margin: 18px 0; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="logo">SimpleReceipt</div>
+      <div class="pill">Photo → Excel. Done.</div>
+    </div>
+
+    <div class="hero">
+      <span class="badge">Built for Canada + US tax season</span>
+      <h1>Turn receipt photos into a clean Excel file in seconds.</h1>
+      <p class="sub">
+        Take a photo. Upload it. Export to Excel.
+        No accounts. No setup. If the AI misses something, you can fix it in Excel in 2 seconds.
+      </p>
+
+      <div class="ctaRow">
+        <!-- ✅ Change APP_URL to your app root (same server) -->
+        <a class="btn primary" href="/"><span>Try it now</span></a>
+
+        <!-- ✅ Change STRIPE_LINK to your payment link -->
+        <a class="btn" href="https://buy.stripe.com/cNi9AU7FEbnfcDRgkx2go00" target="_blank" rel="noreferrer">
+          Unlock unlimited export — $4 (one-time)
+        </a>
+
+        <a class="btn ghost" href="#faq">FAQ</a>
+      </div>
+      <p class="fine" style="margin-top:10px;">
+        One-time payment. No subscription. Works best on mobile.
+      </p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2 style="margin:0 0 8px; font-size:18px;">How it works</h2>
+        <div class="steps">
+          <div class="step"><div class="num">1</div><div><b>Take a photo</b><div class="fine">Use your phone camera. Receipts, invoices, bills.</div></div></div>
+          <div class="step"><div class="num">2</div><div><b>Upload</b><div class="fine">We extract Date, Vendor, Total, Tax (if available), Currency.</div></div></div>
+          <div class="step"><div class="num">3</div><div><b>Export to Excel</b><div class="fine">One row per receipt. Accountant-friendly.</div></div></div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="kpis">
+          <div class="k"><b>Mobile-first</b><span>Made for your phone</span></div>
+          <div class="k"><b>No accounts</b><span>No login, no setup</span></div>
+          <div class="k"><b>Fast</b><span>Simple workflow</span></div>
+          <div class="k"><b>Excel-ready</b><span>Clean export</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 8px; font-size:18px;">Quick demo</h2>
+        <div class="imgPh">
+          Drop a screenshot/GIF here later<br/>
+          (mobile upload → table → export)
+        </div>
+        <p class="fine" style="margin-top:10px;">
+          Keep it simple. The demo sells itself.
+        </p>
+      </div>
+    </div>
+
+    <div class="card faq" id="faq">
+      <h2 style="margin:0 0 10px; font-size:18px;">FAQ</h2>
+
+      <h3>Is it accurate?</h3>
+      <p>Usually yes. If it misses something, just edit the Excel file — it’s faster than manual entry anyway.</p>
+
+      <h3>Do you store my receipts?</h3>
+      <p>We store the uploaded image and extracted data to generate your Excel export.</p>
+
+      <h3>Do I need an account?</h3>
+      <p>No. No accounts, no passwords. Just upload and export.</p>
+
+      <h3>Is this tax advice?</h3>
+      <p>No. This is a tool to organize receipts, not tax or accounting advice.</p>
+
+      <div class="sep"></div>
+
+      <div class="ctaRow">
+        <a class="btn primary" href="/">Try it now</a>
+        <a class="btn" href="https://buy.stripe.com/cNi9AU7FEbnfcDRgkx2go00" target="_blank" rel="noreferrer">Unlock unlimited export — $4 (one-time)</a>
+      </div>
+
+      <p class="fine" style="margin-top:10px;">
+        Tool for organizing receipts. Not tax or accounting advice.
+      </p>
+    </div>
+
+    <p class="fine" style="margin-top:14px;">
+      © <span id="y"></span> SimpleReceipt
+    </p>
+  </div>
+
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
