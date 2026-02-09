@@ -34,7 +34,7 @@
 
     <label class="muted">Foto boleta</label>
     <!-- capture=environment abre cámara atrás en muchos celulares -->
-    <input id="file" type="file" accept="image/*" capture="environment" />
+    <input id="file" name="file" type="file" accept="image/*" capture="environment" />
 
     <button id="btnUpload">Subir y procesar</button>
 
@@ -120,7 +120,7 @@ $('btnUpload').addEventListener('click', async () => {
   $('status').className = 'muted';
 
   const fd = new FormData();
-  fd.append('image', f);
+  fd.append('file', f);
   fd.append('category', $('category').value);
 
   try {
