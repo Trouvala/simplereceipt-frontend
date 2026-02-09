@@ -125,11 +125,14 @@ $('btnUpload').addEventListener('click', async () => {
 
   try {
     const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: fd });
-    const data = await res.json().catch(() => ({}));
+   let data = {};
+let raw = "";
+try { data = await res.clone().json(); } catch {}
+try { raw = await res.text(); } catch {}
 
     if (!res.ok || !data.ok) {
       $('status').className = 'err';
-      $('status').textContent = '❌ Error:\n' + (data.error || JSON.stringify(data) || 'upload failed');
+     $('status').textContent = '❌ Error:\n' + (data.error || raw || 'upload failed');
       return;
     }
 
