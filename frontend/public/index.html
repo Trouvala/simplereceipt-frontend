@@ -35,7 +35,7 @@
     .faq h3 { margin: 0 0 6px; font-size: 15px; }
     .faq p { margin: 0 0 12px; color: var(--muted); }
     .fine { color: var(--muted); font-size: 12px; line-height: 1.35; }
-    .imgPh { aspect-ratio: 9/16; border-radius: 16px; border:1px dashed #2b2b33; display:flex; align-items:center; justify-content:center; color:#777; background:#0f0f11; }
+    .imgPh { aspect-ratio: 9/16; border-radius: 16px; border:1px dashed #2b2b33; display:flex; align-items:center; justify-content:center; color:#777; background:#0f0f11; text-align:center; padding:16px; }
     .badge { display:inline-block; font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
     .sep { height:1px; background: var(--line); margin: 18px 0; }
   </style>
@@ -57,10 +57,8 @@
       </p>
 
       <div class="ctaRow">
-        <!-- ✅ Change APP_URL to your app root (same server) -->
         <a class="btn primary" href="/app.html">Try it now</a>
 
-        <!-- ✅ Change STRIPE_LINK to your payment link -->
         <a class="btn" href="https://buy.stripe.com/cNi9AU7FEbnfcDRgkx2go00" target="_blank" rel="noreferrer">
           Unlock unlimited export — $5.50 CAD (~$4 USD) one-time
         </a>
@@ -94,7 +92,7 @@
       <div class="card">
         <h2 style="margin:0 0 8px; font-size:18px;">Quick demo</h2>
         <div class="imgPh">
-          Drop a screenshot/GIF here later<br/>
+          Drop a screenshot or GIF here later<br />
           (mobile upload → table → export)
         </div>
         <p class="fine" style="margin-top:10px;">
@@ -107,7 +105,7 @@
       <h2 style="margin:0 0 10px; font-size:18px;">FAQ</h2>
 
       <h3>Is it accurate?</h3>
-      <p>Usually yes. If it misses something, just edit the Excel file — it’s faster than manual entry anyway.</p>
+      <p>Usually yes. If it misses something, just edit the Excel file — it’s still faster than manual entry.</p>
 
       <h3>Do you store my receipts?</h3>
       <p>We store the uploaded image and extracted data to generate your Excel export.</p>

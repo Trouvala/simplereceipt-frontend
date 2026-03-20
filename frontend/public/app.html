@@ -1,84 +1,187 @@
-function cors(request) {
-  const origin = request.headers.get("Origin") || "*";
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-    "Vary": "Origin",
-  };
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SimpleReceipt App</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 12px; background:#f7f7f8; color:#111; }
+    .wrap { max-width: 960px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin-bottom: 12px; background:#fff; }
+    button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #111;
+      color:#fff;
+      cursor:pointer;
+    }
+    input, select {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+    .row { display: grid; gap: 10px; }
+    .muted { color: #666; font-size: 13px; }
+    .ok { color: #0a7; font-weight: 600; }
+    .err { color: #c00; font-weight: 600; white-space: pre-wrap; }
+    .topbar {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+    .link { color:#111; text-decoration:none; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h2 style="margin:0;">📸 SimpleReceipt</h2>
+      <a class="link" href="/">← Back to landing</a>
+    </div>
+
+    <div class="card row">
+      <label class="muted" for="category">Category</label>
+      <select id="category">
+        <option value="cafe">cafe</option>
+        <option value="groceries">groceries</option>
+        <option value="transport">transport</option>
+        <option value="other" selected>other</option>
+      </select>
+
+      <label class="muted" for="file">Receipt photo</label>
+      <input id="file" type="file" accept="image/*" capture="environment" />
+
+      <button id="btnUpload">Upload and process</button>
+
+      <div id="status" class="muted">Ready to upload.</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div>
+          <div class="muted">Table (from receipts.csv)</div>
+          <div id="count" class="muted"></div>
+        </div>
+        <button id="btnExport">Export XLSX</button>
+      </div>
+
+      <div style="overflow:auto; margin-top:10px;">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Vendor</th>
+              <th>Total</th>
+              <th>Tax</th>
+              <th>Currency</th>
+              <th>Category</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function loadCSV() {
+  try {
+    const res = await fetch('/receipts.csv?ts=' + Date.now());
+    if (!res.ok) return;
+
+    const text = await res.text();
+    const lines = text.trim().split(/\r?\n/);
+
+    if (lines.length <= 1) {
+      $('count').textContent = '0 receipts';
+      $('tbl').querySelector('tbody').innerHTML = '';
+      return;
+    }
+
+    const rows = lines.slice(1).map(l => l.split(','));
+    $('count').textContent = `${rows.length} receipts`;
+
+    const tbody = $('tbl').querySelector('tbody');
+    tbody.innerHTML = '';
+
+    rows.slice(-30).reverse().forEach(cols => {
+      const tr = document.createElement('tr');
+
+      const safe = (x) => (x ?? '').toString();
+      const date = safe(cols[0]);
+      const vendor = safe(cols[1]);
+      const total = safe(cols[2]);
+      const tax = safe(cols[3]);
+      const currency = safe(cols[4]);
+      const category = safe(cols[5]);
+      const source = safe(cols[6]);
+
+      tr.innerHTML = `
+        <td>${date}</td>
+        <td>${vendor}</td>
+        <td>${total}</td>
+        <td>${tax}</td>
+        <td>${currency}</td>
+        <td>${category}</td>
+        <td>${source}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    $('count').textContent = 'Could not load receipts.csv';
+  }
 }
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const headers = cors(request);
+$('btnUpload').addEventListener('click', async () => {
+  const f = $('file').files[0];
+  if (!f) {
+    $('status').textContent = '⚠️ Upload or take a photo first.';
+    $('status').className = 'err';
+    return;
+  }
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers });
+  $('status').textContent = '⏳ Processing... (upload + OCR + parsing)';
+  $('status').className = 'muted';
+
+  const fd = new FormData();
+  fd.append('image', f);
+  fd.append('category', $('category').value);
+
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: fd });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) {
+      $('status').className = 'err';
+      $('status').textContent = '⌛ Error:\n' + (data.error || JSON.stringify(data) || 'Upload failed');
+      return;
     }
 
-    if (url.pathname === "/") {
-      return new Response("API OK", { status: 200, headers });
-    }
+    $('status').className = 'ok';
+    $('status').textContent = `✅ Done. receiptId=${data.receiptId || data.sessionId || '(no id)'}`;
+    await loadCSV();
+  } catch (e) {
+    $('status').className = 'err';
+    $('status').textContent = '⌛ Error:\n' + e.message;
+  }
+});
 
-    // ✅ UPLOAD: acepta cualquier body (FormData o lo que sea)
-    if (url.pathname === "/upload" && request.method === "POST") {
-      try {
-        // intenta formData (si viene de <form>)
-        let fileName = null;
-        let category = null;
+$('btnExport').addEventListener('click', () => {
+  window.location.href = '/export';
+});
 
-        const ct = request.headers.get("content-type") || "";
-        if (ct.includes("multipart/form-data")) {
-          const fd = await request.formData();
-          const file = fd.get("file") || fd.get("photo") || fd.get("image") || fd.get("receipt");
-          category = fd.get("category") || fd.get("categoria") || "unknown";
-          fileName = file?.name || null;
-        }
-
-        // guarda algo mínimo en D1 para confirmar
-        await env.DB.prepare(`
-          CREATE TABLE IF NOT EXISTS receipts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category TEXT,
-            filename TEXT,
-            created_at TEXT
-          )
-        `).run();
-
-        await env.DB.prepare(
-          "INSERT INTO receipts (category, filename, created_at) VALUES (?, ?, datetime('now'))"
-        ).bind(String(category || "unknown"), String(fileName || "nofile")).run();
-
-        return new Response(
-          JSON.stringify({ ok: true, category: category || "unknown", filename: fileName }),
-          { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
-        );
-      } catch (e) {
-        return new Response(
-          JSON.stringify({ ok: false, error: e.message }),
-          { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // ✅ receipts.csv
-    if (url.pathname === "/receipts.csv" && request.method === "GET") {
-      const { results } = await env.DB.prepare(
-        "SELECT id, category, filename, created_at FROM receipts ORDER BY id DESC LIMIT 100"
-      ).all();
-
-      const csv =
-        "id,category,filename,created_at\n" +
-        results.map(r => `${r.id},${r.category},${r.filename},${r.created_at}`).join("\n");
-
-      return new Response(csv, {
-        status: 200,
-        headers: { ...headers, "Content-Type": "text/csv" },
-      });
-    }
-
-    return new Response("Not found", { status: 404, headers });
-  },
-};
+loadCSV();
+</script>
+</body>
+</html>
