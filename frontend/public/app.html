@@ -8,6 +8,7 @@
     body { font-family: system-ui, Arial; margin: 12px; background:#f7f7f8; color:#111; }
     .wrap { max-width: 960px; margin: 0 auto; }
     .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin-bottom: 12px; background:#fff; }
+
     button {
       padding: 10px 14px;
       border-radius: 10px;
@@ -16,10 +17,12 @@
       color:#fff;
       cursor:pointer;
     }
+
     button[disabled] {
       opacity: 0.5;
       cursor: not-allowed;
     }
+
     input, select {
       padding: 10px;
       border-radius: 10px;
@@ -27,12 +30,15 @@
       width: 100%;
       box-sizing: border-box;
     }
+
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+
     .row { display: grid; gap: 10px; }
     .muted { color: #666; font-size: 13px; }
     .ok { color: #0a7; font-weight: 600; }
     .err { color: #c00; font-weight: 600; white-space: pre-wrap; }
+
     .topbar {
       display:flex;
       justify-content:space-between;
@@ -41,7 +47,9 @@
       margin-bottom:12px;
       flex-wrap:wrap;
     }
+
     .link { color:#111; text-decoration:none; font-size:14px; }
+
     .pill {
       display:inline-block;
       padding:8px 10px;
@@ -50,25 +58,30 @@
       font-size:13px;
       background:#fff;
     }
+
     .paywall {
       border:1px solid #e3c99a;
       background:#fff9ef;
     }
+
     .paywall h3 {
       margin:0 0 6px;
       font-size:18px;
     }
+
     .paywall p {
       margin:0 0 10px;
       color:#444;
       line-height:1.45;
     }
+
     .btnRow {
       display:flex;
       gap:10px;
       flex-wrap:wrap;
       align-items:center;
     }
+
     .btnLink {
       display:inline-block;
       padding: 10px 14px;
@@ -78,7 +91,27 @@
       color:#fff;
       text-decoration:none;
     }
+
     .hidden { display:none; }
+
+    .fileBtn {
+      display:inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #111;
+      color:#fff;
+      cursor:pointer;
+      text-align:center;
+      width: fit-content;
+    }
+
+    .hiddenFileInput {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -87,7 +120,7 @@
       <h2 style="margin:0;">📸 GetSimpleReceipt</h2>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <span id="trialPill" class="pill"></span>
-        <a class="link" href="/">← Back to landing</a>
+        <a class="link" href="/">← Back to home</a>
       </div>
     </div>
 
@@ -120,21 +153,23 @@
       </select>
 
       <label class="muted" for="file">Receipt photo</label>
-      <input id="file" type="file" accept="image/*" capture="environment" />
+      <label for="file" class="fileBtn">Take photo or choose image</label>
+      <div id="fileName" class="muted">No image selected yet.</div>
+      <input id="file" type="file" accept="image/*" capture="environment" class="hiddenFileInput" />
 
-      <button id="btnUpload">Upload and process</button>
+      <button id="btnUpload">Process receipt</button>
 
-      <div id="status" class="muted">Ready to upload.</div>
+      <div id="status" class="muted">Take a photo of your receipt and we’ll extract the details into your spreadsheet.</div>
       <div id="trialStatus" class="muted"></div>
     </div>
 
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
         <div>
-          <div class="muted">Table (from receipts.csv)</div>
+          <div class="muted">Processed receipts</div>
           <div id="count" class="muted"></div>
         </div>
-        <button id="btnExport">Export XLSX</button>
+        <button id="btnExport">Export to Excel</button>
       </div>
 
       <div style="overflow:auto; margin-top:10px;">
@@ -159,7 +194,6 @@
 <script>
 const $ = (id) => document.getElementById(id);
 
-const STRIPE_LINK = 'https://buy.stripe.com/cNi9AU7FEbnfcDRgkx2go00';
 const FREE_LIMIT = 3;
 const STORAGE_KEY_USED = 'sr_free_uploads_used';
 const STORAGE_KEY_UNLOCKED = 'sr_unlocked';
@@ -173,6 +207,11 @@ if (urlParams.get('paid') === '1') {
   cleanUrl.searchParams.delete('session_id');
   window.history.replaceState({}, '', cleanUrl.pathname);
 }
+
+$('file').addEventListener('change', () => {
+  const f = $('file').files[0];
+  $('fileName').textContent = f ? f.name : 'No image selected yet.';
+});
 
 function getUsedCount() {
   return Number(localStorage.getItem(STORAGE_KEY_USED) || '0');
@@ -200,8 +239,8 @@ function renderTrialUI() {
   const remaining = remainingFree();
 
   if (unlocked) {
-    $('trialPill').textContent = 'Unlimited unlocked';
-    $('trialStatus').textContent = 'Unlimited access is active on this browser through April 30, 2026.';
+    $('trialPill').textContent = 'Unlimited plan active';
+    $('trialStatus').textContent = 'Unlimited plan active until April 30, 2026.';
     $('paywallBox').classList.add('hidden');
     $('btnUpload').disabled = false;
     $('btnExport').disabled = false;
@@ -282,12 +321,12 @@ $('btnUpload').addEventListener('click', async () => {
 
   const f = $('file').files[0];
   if (!f) {
-    $('status').textContent = '⚠️ Upload or take a photo first.';
+    $('status').textContent = '⚠️ Take a photo or choose an image first.';
     $('status').className = 'err';
     return;
   }
 
-  $('status').textContent = '⏳ Processing... (upload + OCR + parsing)';
+  $('status').textContent = '⏳ Processing...';
   $('status').className = 'muted';
 
   const fd = new FormData();
