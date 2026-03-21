@@ -16,6 +16,10 @@
       color:#fff;
       cursor:pointer;
     }
+    button[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     input, select {
       padding: 10px;
       border-radius: 10px;
@@ -38,13 +42,72 @@
       flex-wrap:wrap;
     }
     .link { color:#111; text-decoration:none; font-size:14px; }
+    .pill {
+      display:inline-block;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid #ddd;
+      font-size:13px;
+      background:#fff;
+    }
+    .paywall {
+      border:1px solid #e3c99a;
+      background:#fff9ef;
+    }
+    .paywall h3 {
+      margin:0 0 6px;
+      font-size:18px;
+    }
+    .paywall p {
+      margin:0 0 10px;
+      color:#444;
+      line-height:1.45;
+    }
+    .btnRow {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .btnLink {
+      display:inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #111;
+      background: #111;
+      color:#fff;
+      text-decoration:none;
+    }
+    .hidden { display:none; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
-      <h2 style="margin:0;">📸 SimpleReceipt</h2>
-      <a class="link" href="/">← Back to landing</a>
+      <h2 style="margin:0;">📸 GetSimpleReceipt</h2>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span id="trialPill" class="pill"></span>
+        <a class="link" href="/">← Back to landing</a>
+      </div>
+    </div>
+
+    <div id="paywallBox" class="card paywall hidden">
+      <h3>You’ve used your 3 free receipts.</h3>
+      <p>
+        Unlock unlimited uploads and exports for a one-time tax season launch price of
+        <b>$5.50 CAD</b>. Access valid through <b>April 30, 2026</b>. No account required.
+      </p>
+      <div class="btnRow">
+        <a
+          class="btnLink"
+          href="https://buy.stripe.com/cNi9AU7FEbnfcDRgkx2go00"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Unlock unlimited — $5.50 CAD
+        </a>
+        <span class="muted">Tax season launch price. Limited-time offer.</span>
+      </div>
     </div>
 
     <div class="card row">
@@ -62,6 +125,7 @@
       <button id="btnUpload">Upload and process</button>
 
       <div id="status" class="muted">Ready to upload.</div>
+      <div id="trialStatus" class="muted"></div>
     </div>
 
     <div class="card">
@@ -94,6 +158,71 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
+
+const STRIPE_LINK = 'https://buy.stripe.com/cNi9AU7FEbnfcDRgkx2go00';
+const FREE_LIMIT = 3;
+const STORAGE_KEY_USED = 'sr_free_uploads_used';
+const STORAGE_KEY_UNLOCKED = 'sr_unlocked';
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('paid') === '1') {
+  localStorage.setItem(STORAGE_KEY_UNLOCKED, '1');
+
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete('paid');
+  cleanUrl.searchParams.delete('session_id');
+  window.history.replaceState({}, '', cleanUrl.pathname);
+}
+
+function getUsedCount() {
+  return Number(localStorage.getItem(STORAGE_KEY_USED) || '0');
+}
+
+function setUsedCount(n) {
+  localStorage.setItem(STORAGE_KEY_USED, String(n));
+}
+
+function isUnlocked() {
+  return localStorage.getItem(STORAGE_KEY_UNLOCKED) === '1';
+}
+
+function canUpload() {
+  return isUnlocked() || getUsedCount() < FREE_LIMIT;
+}
+
+function remainingFree() {
+  return Math.max(0, FREE_LIMIT - getUsedCount());
+}
+
+function renderTrialUI() {
+  const unlocked = isUnlocked();
+  const used = getUsedCount();
+  const remaining = remainingFree();
+
+  if (unlocked) {
+    $('trialPill').textContent = 'Unlimited unlocked';
+    $('trialStatus').textContent = 'Unlimited access is active on this browser through April 30, 2026.';
+    $('paywallBox').classList.add('hidden');
+    $('btnUpload').disabled = false;
+    $('btnExport').disabled = false;
+    return;
+  }
+
+  if (used < FREE_LIMIT) {
+    $('trialPill').textContent = `${remaining} free receipt${remaining === 1 ? '' : 's'} left`;
+    $('trialStatus').textContent = `Free trial: ${used}/${FREE_LIMIT} used.`;
+    $('paywallBox').classList.add('hidden');
+    $('btnUpload').disabled = false;
+    $('btnExport').disabled = false;
+    return;
+  }
+
+  $('trialPill').textContent = 'Free trial used';
+  $('trialStatus').textContent = 'You have reached the 3-receipt free limit on this browser.';
+  $('paywallBox').classList.remove('hidden');
+  $('btnUpload').disabled = true;
+  $('btnExport').disabled = true;
+}
 
 async function loadCSV() {
   try {
@@ -144,6 +273,13 @@ async function loadCSV() {
 }
 
 $('btnUpload').addEventListener('click', async () => {
+  if (!canUpload()) {
+    $('status').className = 'err';
+    $('status').textContent = 'Free trial limit reached. Unlock unlimited to continue.';
+    $('paywallBox').classList.remove('hidden');
+    return;
+  }
+
   const f = $('file').files[0];
   if (!f) {
     $('status').textContent = '⚠️ Upload or take a photo first.';
@@ -164,13 +300,33 @@ $('btnUpload').addEventListener('click', async () => {
 
     if (!res.ok || !data.ok) {
       $('status').className = 'err';
-      $('status').textContent = '⌛ Error:\n' + (data.error || JSON.stringify(data) || 'Upload failed');
+      $('status').textContent = '⌛ Error:\n' + (data.error || data.details || JSON.stringify(data) || 'Upload failed');
       return;
+    }
+
+    if (data.duplicate) {
+      $('status').className = 'ok';
+      $('status').textContent = '✅ Duplicate receipt detected. It was already in the file, so it was skipped.';
+      await loadCSV();
+      renderTrialUI();
+      return;
+    }
+
+    if (!isUnlocked()) {
+      setUsedCount(getUsedCount() + 1);
     }
 
     $('status').className = 'ok';
     $('status').textContent = `✅ Done. receiptId=${data.receiptId || data.sessionId || '(no id)'}`;
+
     await loadCSV();
+    renderTrialUI();
+
+    if (!isUnlocked() && getUsedCount() >= FREE_LIMIT) {
+      $('paywallBox').classList.remove('hidden');
+      $('status').className = 'ok';
+      $('status').textContent += ' Free trial complete — unlock unlimited to continue.';
+    }
   } catch (e) {
     $('status').className = 'err';
     $('status').textContent = '⌛ Error:\n' + e.message;
@@ -178,10 +334,18 @@ $('btnUpload').addEventListener('click', async () => {
 });
 
 $('btnExport').addEventListener('click', () => {
+  if (!canUpload()) {
+    $('status').className = 'err';
+    $('status').textContent = 'Free trial limit reached. Unlock unlimited to export more.';
+    $('paywallBox').classList.remove('hidden');
+    return;
+  }
+
   window.location.href = '/export';
 });
 
 loadCSV();
+renderTrialUI();
 </script>
 </body>
 </html>
